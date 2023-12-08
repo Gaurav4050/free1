@@ -1,46 +1,48 @@
-import React, { useState } from "react";
-import "./styles.css";
 
-import Header from "./components/Header";
-import CreateArea from "./components/CreateArea";
-import Note from "./components/Note";
-import Count from "./components/Count";
-import Footer from "./components/Footer";
+import React, { useState, useEffect } from "react";
+import Header from "./components/Header"; 
+import Footer from "./components/Footer"; 
+import NewNote from "./components/NewNote"; 
+import CreateCard from "./components/minors/CreateCard"; 
+import ls from "local-storage";
 
-function App(props) {
-  const [notes, setNotes] = useState([]);
+function App() {
+  const nullNote = { id: 9999999, title: "NULL", note: "NULL" };
+  const storedNotes = JSON.parse(ls.get("notes")) || [nullNote];
 
-  function addNote(newNote) {
-    setNotes((prevValue) => {
-      return [...prevValue, newNote];
-    });
-  }
+  const [notes, setNotes] = useState(storedNotes);
 
-  function deleteNotes(id) {
-    setNotes((preValue) => {
-      return [...preValue.filter((note, index) => index !== id)];
-    });
-  }
+  useEffect(() => {
+    ls("notes", JSON.stringify(notes.filter(note => note.id !== 9999999)));
+  }, [notes]);
+
+  const addNote = (title, content) => {
+    const newId = Math.round(Math.random() * 100);
+    setNotes(prevNotes => [
+      ...prevNotes,
+      { id: newId, title, note: content },
+    ]);
+  };
+
+  const deleteNote = id => {
+    setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+  };
+
+  const saveNote = (id, content) => {
+    setNotes(prevNotes =>
+      prevNotes.map(note =>
+        note.id === id ? { ...note, note: content } : note
+      )
+    );
+  };
+
   return (
-    <div className="App">
+    <div>
       <Header />
-      <Count
-        count={
-          notes.length === 0
-            ? "Empty"
-            : `Showing ${notes.length} Notes in Database`
-        }
-      />
-      <CreateArea onAdd={addNote} />
-      {notes.map((note, index) => (
-        <Note
-          key={index}
-          id={index}
-          title={note.title}
-          content={note.content}
-          onDelete={deleteNotes}
-        />
-      ))}
+      <NewNote add={addNote} />
+      <div className="row">
+        {notes.map(note => CreateCard(note, deleteNote, saveNote))}
+      </div>
       <Footer />
     </div>
   );
